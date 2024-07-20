@@ -3,7 +3,7 @@ mod single_byte;
 use std::io::{Read, Write};
 pub use single_byte::{SingleByteDialectValidator, SingleByteDialect};
 
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum Dialect {
     SingleByte(SingleByteDialect)
 }

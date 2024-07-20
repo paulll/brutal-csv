@@ -88,6 +88,7 @@ impl DialectGroupValidator for SingleByteDialectValidator {
             field_separator_is_terminator: self.field_separator_is_terminator,
             has_escaped_line_breaks: self.has_escaped_line_breaks,
             has_quoted_line_breaks: self.has_quoted_line_breaks,
+            total_rows: self.current_row,
         }))
     }
 }

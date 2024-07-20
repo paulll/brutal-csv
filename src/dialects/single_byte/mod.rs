@@ -1,9 +1,10 @@
 mod detector;
 mod normalizer;
 
+use std::cmp::Ordering;
 pub use detector::*;
 
-#[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq)]
 pub struct SingleByteDialect {
     pub header: Option<Vec<String>>,
 
@@ -17,10 +18,97 @@ pub struct SingleByteDialect {
     pub field_separator_is_terminator: bool,
     pub has_escaped_line_breaks: bool,
     pub has_quoted_line_breaks: bool,
+
+    pub total_rows: usize,
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq, Hash)]
 pub enum RecordTerminator {
     #[default] Crlf,
     Byte(u8)
+}
+
+impl PartialOrd<Self> for SingleByteDialect {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        // CRLF is preferred over Byte(..)
+        if self.record_terminator == RecordTerminator::Crlf && other.record_terminator != RecordTerminator::Crlf {
+            return Some(Ordering::Greater)
+        }
+        if self.record_terminator != RecordTerminator::Crlf && other.record_terminator == RecordTerminator::Crlf {
+            return Some(Ordering::Less)
+        }
+
+        // header is preferred over no-header
+        if self.header.is_some() && other.header.is_none() {
+            return Some(Ordering::Greater)
+        }
+        if self.header.is_none() && other.header.is_some() {
+            return Some(Ordering::Less)
+        }
+
+        // field_separator_is_terminator is preferred
+        if self.field_separator_is_terminator && !other.field_separator_is_terminator {
+            return Some(Ordering::Greater)
+        }
+        if !self.field_separator_is_terminator && other.field_separator_is_terminator {
+            return Some(Ordering::Less)
+        }
+
+        // more numeric columns is preferred
+        let numeric_self = self.numeric_columns
+            .iter()
+            .filter(|x| **x)
+            .count();
+        let numeric_other = other.numeric_columns
+            .iter()
+            .filter(|x| **x)
+            .count();
+        if numeric_self > numeric_other {
+            return Some(Ordering::Greater)
+        }
+        if numeric_self < numeric_other {
+            return Some(Ordering::Less)
+        }
+
+        // has_escaped_line_breaks and has_quoted_line_breaks are not preferred
+        // because most cases when has_escaped_line_breaks=true is valid then =false is valid too
+        // and same for has_quoted_line_breaks
+        if !self.has_escaped_line_breaks && other.has_escaped_line_breaks {
+            return Some(Ordering::Greater)
+        }
+        if self.has_escaped_line_breaks && !other.has_escaped_line_breaks {
+            return Some(Ordering::Less)
+        }
+        if !self.has_quoted_line_breaks && other.has_quoted_line_breaks {
+            return Some(Ordering::Greater)
+        }
+        if self.has_quoted_line_breaks && !other.has_quoted_line_breaks {
+            return Some(Ordering::Less)
+        }
+
+        // pessimize too long headers (100+ unicode characters)
+        let has_long_header_self = self.header
+            .iter()
+            .flatten()
+            .any(|x| x.chars().count() > 100);
+        let has_long_header_other = other.header
+            .iter()
+            .flatten()
+            .any(|x| x.chars().count() > 100);
+        if !has_long_header_self && has_long_header_other {
+            return Some(Ordering::Greater)
+        }
+        if has_long_header_self && !has_long_header_other {
+            return Some(Ordering::Less)
+        }
+
+        // more rows is preferred
+        return self.total_rows.partial_cmp(&other.total_rows)
+    }
+}
+
+impl Ord for SingleByteDialect {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.partial_cmp(other).unwrap()
+    }
 }
