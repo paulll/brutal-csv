@@ -24,7 +24,7 @@ fn main() {
 
     #[cfg(feature = "progress")]
     let progress = if let Some(len) = cli.input.len() {
-        indicatif::ProgressBar::new(len * 2)
+        indicatif::ProgressBar::new(len)
     } else {
         indicatif::ProgressBar::new_spinner()
     };
@@ -37,7 +37,7 @@ fn main() {
     detector.process(&mut reader);
     let dialects = detector.dialects();
 
-    if let Some(dialect) = dialects.first() {
+    if let Some(dialect) = dialects.iter().max() {
         cli.input.rewind().expect("To transform we need two full passes over stream, so it must be rewindable, so pipes don't work.");
 
         eprintln!("{:#?}", dialect);
