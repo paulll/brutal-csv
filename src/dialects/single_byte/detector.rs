@@ -64,13 +64,18 @@ impl DialectGroupValidator for SingleByteDialectValidator {
     fn finalize(&mut self) -> Option<Dialect> {
         self.check_field_separator_is_terminator();
 
-        let empty_columns = self.col_max_len
+        let empty_columns: Vec<bool> = self.col_max_len
             .iter()
             .map(|x| *x == 0)
             .collect();
 
         let numeric_columns = self.numeric_columns.clone();
 
+        // That's either invalid CSV or completely empty file, 
+        // in any case we won't parse it.
+        if empty_columns.iter().all(|x|*x) {
+            return None
+        }
 
         Some(Dialect::SingleByte(SingleByteDialect {
             header: self.try_get_headers(),
@@ -362,7 +367,7 @@ impl SingleByteDialectValidator {
             }
 
             for (col_id, is_numeric) in self.numeric_columns.iter().enumerate() {
-                if *is_numeric && header[col_id].chars().all(|c|c.is_ascii_digit()) {
+                if *is_numeric && !header[col_id].chars().all(|c|c.is_ascii_digit()) {
                     return Some(header)
                 }
             }
