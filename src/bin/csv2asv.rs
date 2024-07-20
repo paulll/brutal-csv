@@ -18,6 +18,7 @@ struct Args {
     output: Output
 }
 
+#[allow(unused_mut)]
 fn main() {
     let mut cli = Args::parse();
 
@@ -28,7 +29,7 @@ fn main() {
         indicatif::ProgressBar::new_spinner()
     };
 
-    let mut detector = csv_parser::CsvSniffer::new();
+    let mut detector = brutal_csv::CsvSniffer::new();
     let mut reader = cli.input.clone();
     #[cfg(feature = "progress")]
     let mut reader = progress.wrap_read(reader);
