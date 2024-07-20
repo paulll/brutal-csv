@@ -40,6 +40,8 @@ fn main() {
     if let Some(dialect) = dialects.first() {
         cli.input.rewind().expect("To transform we need two full passes over stream, so it must be rewindable, so pipes don't work.");
 
+        eprintln!("{:#?}", dialect);
+
         let reader = cli.input;
         #[cfg(feature = "progress")]
         let mut reader = progress.wrap_read(reader);
