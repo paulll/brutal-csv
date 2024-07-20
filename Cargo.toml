@@ -1,0 +1,17 @@
+[package]
+name = "csv-parser"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "4.5.9", features = ["derive"] , optional = true }
+indicatif = { version = "0.17.8" , optional = true }
+clio = { version = "0.3.5", features = ["clap", "clap-parse"] , optional = true }
+
+[features]
+binary = ["dep:clap", "dep:clio"]
+progress = ["dep:indicatif", "binary"]
+
+[[bin]]
+name = "csv2asv"
+required-features = ["binary"]
