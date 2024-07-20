@@ -10,7 +10,7 @@ return list of dialects for which file is valid.
 
 ```rust
 use std::fs::File;
-let mut sniffer = csv_parser::CsvSniffer::new();
+let mut sniffer = brutal_csv::CsvSniffer::new();
 let mut reader = File::open("/etc/group").unwrap(); // that's also CSV-like file
 
 sniffer.process(&mut reader);
