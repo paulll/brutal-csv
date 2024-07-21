@@ -116,7 +116,7 @@ impl<W: Write, R: Read> SingleByteDialectNormalizer<W, R> {
     }
 
     #[inline]
-    fn try_quote(&mut self, c: &u8) -> bool   {
+    fn try_quote(&mut self, c: &u8) -> bool {
         if let Some(q) = self.dialect.quote_char {
             let was_active = self.quote_active;
             let should_switch = q == *c;

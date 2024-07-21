@@ -95,18 +95,25 @@ impl DialectGroupValidator for SingleByteDialectValidator {
 
 
 impl SingleByteDialectValidator {
+    #[allow(clippy::single_element_loop)]
     pub fn _make() -> Vec<Self> {
-        vec![
+        let mut variants = vec![
             Self {
                 escape_char: None,
                 quote_char: Some(b'"'),
-                field_separator: b',',
-                record_terminator: RecordTerminator::Byte(b'\n'),
+                field_separator: b';',
+                record_terminator: RecordTerminator::Crlf,
                 has_quoted_line_breaks: true,
                 has_escaped_line_breaks: false,
                 ..Default::default()
             }
-        ]
+        ];
+
+        for v in &mut variants {
+            v.push_first_row_cell();
+        }
+
+        variants
     }
     
     #[allow(clippy::single_element_loop)]
@@ -147,6 +154,10 @@ impl SingleByteDialectValidator {
                 v.record_terminator = q;
                 variants.push(v.clone());
             }
+        }
+
+        for v in &mut variants {
+            v.push_first_row_cell();
         }
 
         variants
@@ -278,8 +289,11 @@ impl SingleByteDialectValidator {
             self.numeric_columns[self.current_col] &= self.current_cell_is_numeric;
             self.col_min_len[self.current_col] = min(self.col_min_len[self.current_col], self.current_cell_byte);
             self.col_max_len[self.current_col] = max(self.col_max_len[self.current_col], self.current_cell_byte);
-        } else if self.current_col > MAX_COLUMNS {
-            return Err("Too many columns (first row)")
+        } else {
+            self.push_first_row_cell();
+            if self.current_col > MAX_COLUMNS {
+                return Err("Too many columns (first row)")
+            }
         }
 
         self.quote_active = false;
@@ -301,6 +315,11 @@ impl SingleByteDialectValidator {
         }
 
         self.end_field()?;
+        // .end_field() always starts new column
+        if self.current_row == 0 {
+            self.pop_first_row_cell();
+        }
+
         self.prev_char_was_cr = false;
         self.current_col = 0;
         self.current_row += 1;
@@ -310,15 +329,25 @@ impl SingleByteDialectValidator {
 
     #[cold]
     fn push_first_row_char(&mut self, c: &u8) {
-        if self.current_cell_byte == 0 {
-            self.first_row.push(vec![*c]);
-            self.col_min_len.push(usize::MAX);
-            self.col_max_len.push(usize::MIN);
-            self.ascii_columns.push(true);
-            self.numeric_columns.push(true);
-        } else {
-            self.first_row[self.current_col].push(*c);
-        }
+        self.first_row[self.current_col].push(*c);
+    }
+
+    #[cold]
+    fn push_first_row_cell(&mut self) {
+        self.first_row.push(vec![]);
+        self.col_min_len.push(usize::MAX);
+        self.col_max_len.push(usize::MIN);
+        self.ascii_columns.push(true);
+        self.numeric_columns.push(true);
+    }
+
+    #[cold]
+    fn pop_first_row_cell(&mut self) {
+        self.first_row.pop();
+        self.col_min_len.pop();
+        self.col_max_len.pop();
+        self.ascii_columns.pop();
+        self.numeric_columns.pop();
     }
 
     fn check_field_separator_is_terminator(&mut self) {
@@ -327,11 +356,7 @@ impl SingleByteDialectValidator {
 
         if last_col_is_empty && last_col_name_is_empty {
             self.field_separator_is_terminator = true;
-            self.first_row.pop();
-            self.col_min_len.pop();
-            self.col_max_len.pop();
-            self.ascii_columns.pop();
-            self.numeric_columns.pop();
+            self.pop_first_row_cell();
         }
     }
 
@@ -378,8 +403,10 @@ impl SingleByteDialectValidator {
     }
     
     fn format_error(&self, desc: &'static str, buffer: &[u8], pos: usize) -> String {
-        let ctx_min = max(0, pos.clamp(32, usize::MAX) - 32);
-        let ctx_max = min(buffer.len() - 1, pos + 32);
+        const CONTEXT_SIZE: usize = 256;
+
+        let ctx_min = max(0, pos.clamp(CONTEXT_SIZE, usize::MAX) - CONTEXT_SIZE);
+        let ctx_max = min(buffer.len() - 1, pos + CONTEXT_SIZE);
         let context = String::from_utf8_lossy(&buffer[ctx_min..ctx_max]);
         format!("{desc} at {}:{} (offset={}) near `{context}`", self.current_row, self.current_col, self.current_byte)
     }

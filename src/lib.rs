@@ -28,7 +28,7 @@ impl CsvSniffer {
     ///
     /// You must pass whole file into it, otherwise behaviour is undefined.
     pub fn process<T: Read>(&mut self, reader: &mut T) {
-        let mut buffer = vec![b'0'; 1024*1024*16]; // 16 MiB chunks
+        let mut buffer = [b'0'; 1024*1024]; // 1 MiB chunks
 
         loop {
             let chunk_size = reader.read(&mut buffer).unwrap();
