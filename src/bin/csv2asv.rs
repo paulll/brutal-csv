@@ -39,6 +39,8 @@ fn main() {
 
     if let Some(dialect) = dialects.iter().max() {
         cli.input.rewind().expect("To transform we need two full passes over stream, so it must be rewindable, so pipes don't work.");
+
+        #[cfg(feature = "progress")]
         progress.reset();
 
         eprintln!("{:#?}", dialect);
