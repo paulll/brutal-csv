@@ -1,7 +1,7 @@
 #![doc = include_str!("../README.md")]
 
 use std::io::Read;
-use crate::dialects::{Dialect, DialectGroupValidator, SingleByteDialectValidator};
+use crate::dialects::{Dialect, DialectGroupValidator, KeyValueDialectValidator, SingleByteDialectValidator};
 
 mod dialects;
 
@@ -15,6 +15,11 @@ impl CsvSniffer {
         let mut validators = vec![];
 
         validators.extend(SingleByteDialectValidator::make()
+            .into_iter()
+            .map(|x| Box::new(x) as Box<dyn DialectGroupValidator>)
+        );
+
+        validators.extend(KeyValueDialectValidator::make()
             .into_iter()
             .map(|x| Box::new(x) as Box<dyn DialectGroupValidator>)
         );

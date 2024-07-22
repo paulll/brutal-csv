@@ -1,11 +1,14 @@
 mod single_byte;
+mod key_value;
 
 use std::io::{Read, Write};
 pub use single_byte::{SingleByteDialectValidator, SingleByteDialect};
+pub use key_value::{KeyValueDialectValidator, KeyValueDialect};
 
 #[derive(Clone, Debug, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum Dialect {
-    SingleByte(SingleByteDialect)
+    SingleByte(SingleByteDialect),
+    KeyValue(KeyValueDialect)
 }
 
 pub trait DialectGroupValidator {
@@ -26,6 +29,9 @@ impl Dialect {
         match self {
             Dialect::SingleByte(sb) => {
                 sb.to_asv(src, dest)
+            }
+            Dialect::KeyValue(kv) => {
+                kv.to_asv(src, dest)
             }
         }
     }
