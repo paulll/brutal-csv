@@ -13,10 +13,15 @@ struct Args {
     #[clap(short, long, value_parser)]
     input: Input,
 
+    /// Manually specify if headers are present
+    #[clap(long, value_parser)]
+    headers: Option<bool>,
+
     /// Output ASV file
     #[clap(short, long, value_parser)]
     output: Output
 }
+
 
 #[allow(unused_mut)]
 fn main() {
@@ -29,7 +34,7 @@ fn main() {
         indicatif::ProgressBar::new_spinner()
     };
 
-    let mut detector = brutal_csv::CsvSniffer::new();
+    let mut detector = brutal_csv::CsvSniffer::new(cli.headers);
     let mut reader = cli.input.clone();
     #[cfg(feature = "progress")]
     let mut reader = progress.wrap_read(reader);

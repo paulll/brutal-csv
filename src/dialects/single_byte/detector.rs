@@ -46,6 +46,8 @@ pub struct SingleByteDialectValidator {
     current_col: usize,
     current_cell_byte: usize,
     current_byte: usize,
+
+    has_headers_user: Option<bool>
 }
 
 impl DialectGroupValidator for SingleByteDialectValidator {
@@ -95,31 +97,34 @@ impl DialectGroupValidator for SingleByteDialectValidator {
 
 
 impl SingleByteDialectValidator {
-    #[allow(clippy::single_element_loop)]
-    pub fn _make() -> Vec<Self> {
-        let mut variants = vec![
-            Self {
-                escape_char: None,
-                quote_char: Some(b'"'),
-                field_separator: b';',
-                record_terminator: RecordTerminator::Crlf,
-                has_quoted_line_breaks: true,
-                has_escaped_line_breaks: false,
-                ..Default::default()
-            }
-        ];
-
-        for v in &mut variants {
-            v.push_first_row_cell();
-        }
-
-        variants
-    }
+    // #[allow(clippy::single_element_loop)]
+    // pub fn _make() -> Vec<Self> {
+    //     let mut variants = vec![
+    //         Self {
+    //             escape_char: None,
+    //             quote_char: Some(b'"'),
+    //             field_separator: b';',
+    //             record_terminator: RecordTerminator::Crlf,
+    //             has_quoted_line_breaks: true,
+    //             has_escaped_line_breaks: false,
+    //             ..Default::default()
+    //         }
+    //     ];
+    //
+    //     for v in &mut variants {
+    //         v.push_first_row_cell();
+    //     }
+    //
+    //     variants
+    // }
     
     #[allow(clippy::single_element_loop)]
-    pub fn make() -> Vec<Self> {
-        let mut variants = vec![SingleByteDialectValidator::default()];
-        
+    pub fn make(has_headers: Option<bool>) -> Vec<Self> {
+        let mut variants = vec![SingleByteDialectValidator {
+            has_headers_user: has_headers,
+            ..Default::default()
+        }];
+
         for mut v in variants.clone().into_iter() {
             v.has_quoted_line_breaks = true;
             variants.push(v);
@@ -376,6 +381,14 @@ impl SingleByteDialectValidator {
             .ok();
 
         if let Some(header) = first_row {
+            if self.has_headers_user == Some(true) {
+                return Some(header);
+            }
+            
+            if self.has_headers_user == Some(false) {
+                return None;
+            }
+            
             for col_id in 0..header.len() {
                 let col_min = self.col_min_len[col_id];
                 let col_max = self.col_max_len[col_id];

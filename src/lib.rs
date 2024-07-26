@@ -11,10 +11,14 @@ pub struct CsvSniffer {
 }
 
 impl CsvSniffer {
-    pub fn new() -> Self {
+
+    /// None = unknown (default)
+    /// Some(true) = assume with headers 
+    /// Some(false) = assume without headers   
+    pub fn new(has_headers: Option<bool>) -> Self {
         let mut validators = vec![];
 
-        validators.extend(SingleByteDialectValidator::make()
+        validators.extend(SingleByteDialectValidator::make(has_headers)
             .into_iter()
             .map(|x| Box::new(x) as Box<dyn DialectGroupValidator>)
         );
