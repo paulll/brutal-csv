@@ -384,11 +384,16 @@ impl SingleByteDialectValidator {
             if self.has_headers_user == Some(true) {
                 return Some(header);
             }
-            
+
             if self.has_headers_user == Some(false) {
                 return None;
             }
-            
+
+            // kinda dirty, but works for my case
+            if header.iter().any(|x| KNOWN_HEADERS.contains(&&**x)) {
+                return Some(header)
+            }
+
             for col_id in 0..header.len() {
                 let col_min = self.col_min_len[col_id];
                 let col_max = self.col_max_len[col_id];
@@ -424,3 +429,32 @@ impl SingleByteDialectValidator {
         format!("{desc} at {}:{} (offset={}) near `{context}`", self.current_row, self.current_col, self.current_byte)
     }
 }
+
+
+const KNOWN_HEADERS: &[&str; 25] = &[
+    "email",
+    "id",
+    "full_name",
+    "phone_number",
+    "address",
+    "phone",
+    "password",
+    "first_name",
+    "fio",
+    "адрес",
+    "date_of_birth",
+    "time",
+    "status",
+    "city",
+    "admin",
+    "country",
+    "created_at",
+    "gender",
+    "instagram",
+    "ip",
+    "last_name",
+    "lastname",
+    "vip",
+    "work",
+    "телефон"
+];
