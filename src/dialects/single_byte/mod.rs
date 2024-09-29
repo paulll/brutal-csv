@@ -30,14 +30,6 @@ pub enum RecordTerminator {
 
 impl PartialOrd<Self> for SingleByteDialect {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        // CRLF is preferred over Byte(..)
-        if self.record_terminator == RecordTerminator::Crlf && other.record_terminator != RecordTerminator::Crlf {
-            return Some(Ordering::Greater)
-        }
-        if self.record_terminator != RecordTerminator::Crlf && other.record_terminator == RecordTerminator::Crlf {
-            return Some(Ordering::Less)
-        }
-
         // header is preferred over no-header
         if self.header.is_some() && other.header.is_none() {
             return Some(Ordering::Greater)
@@ -105,7 +97,20 @@ impl PartialOrd<Self> for SingleByteDialect {
         }
 
         // more rows is preferred
-        return self.total_rows.partial_cmp(&other.total_rows)
+        let rows_difference = self.total_rows.partial_cmp(&other.total_rows).unwrap();
+        if rows_difference.is_ne() {
+            return Some(rows_difference);
+        }
+
+        // CRLF is preferred over Byte(..)
+        if self.record_terminator == RecordTerminator::Crlf && other.record_terminator != RecordTerminator::Crlf {
+            return Some(Ordering::Greater)
+        }
+        if self.record_terminator != RecordTerminator::Crlf && other.record_terminator == RecordTerminator::Crlf {
+            return Some(Ordering::Less)
+        }
+
+        return Some(Ordering::Equal);
     }
 }
 
