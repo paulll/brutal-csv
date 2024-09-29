@@ -79,6 +79,11 @@ impl DialectGroupValidator for SingleByteDialectValidator {
             return None
         }
 
+        const MIN_ROWS: usize = 5;
+        if self.current_row < MIN_ROWS {
+            return None;
+        }
+
         Some(Dialect::SingleByte(SingleByteDialect {
             header: self.try_get_headers(),
             field_separator: self.field_separator,
