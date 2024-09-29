@@ -394,9 +394,25 @@ impl SingleByteDialectValidator {
                 return None;
             }
 
-            // kinda dirty, but works for my case
-            if header.iter().any(|x| KNOWN_HEADERS.contains(&&**x)) {
-                return Some(header)
+            const MAX_HEADER_SIZE: usize = 256;
+            for column_name in header.iter() {
+                if column_name.len() > MAX_HEADER_SIZE {
+                    return None;
+                }
+
+
+                let column_name_lc = column_name.to_lowercase();
+                // kinda dirty, but works for my case
+                if KNOWN_HEADERS.contains(&&*column_name_lc) {
+                    return Some(header);
+                }
+
+                if column_name_lc.ends_with("_id") {
+                    return Some(header);
+                }
+                if column_name_lc.ends_with("name") {
+                    return Some(header);
+                }
             }
 
             for col_id in 0..header.len() {
@@ -436,7 +452,7 @@ impl SingleByteDialectValidator {
 }
 
 
-const KNOWN_HEADERS: &[&str; 25] = &[
+const KNOWN_HEADERS: &'static [&'static str; 25] = &[
     "email",
     "id",
     "full_name",
