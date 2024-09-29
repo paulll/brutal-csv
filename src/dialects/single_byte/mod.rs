@@ -57,11 +57,13 @@ impl PartialOrd<Self> for SingleByteDialect {
         // more numeric columns is preferred
         let numeric_self = self.numeric_columns
             .iter()
-            .filter(|x| **x)
+            .zip(self.empty_columns.iter())
+            .filter(|(is_numeric, is_empty)| **is_numeric && !**is_empty)
             .count();
         let numeric_other = other.numeric_columns
             .iter()
-            .filter(|x| **x)
+            .zip(other.empty_columns.iter())
+            .filter(|(is_numeric, is_empty)| **is_numeric && !**is_empty)
             .count();
         if numeric_self > numeric_other {
             return Some(Ordering::Greater)
